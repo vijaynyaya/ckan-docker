@@ -1,6 +1,6 @@
 volumes:
   ckan_storage:
-  pg_data:
+  # pg_data:
   solr_data:
   pip_cache:
   site_packages:
@@ -17,7 +17,7 @@ services:
     env_file:
       - .env
     links:
-      - db
+      # - db
       - solr
       - redis
     ports:
@@ -28,6 +28,7 @@ services:
       - pip_cache:/root/.cache/pip
       - site_packages:/usr/lib/python3.10/site-packages
       - vscode_server:/root/.vscode-server
+    # tty: true
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO", "/dev/null", "http://localhost:5000"]
@@ -38,24 +39,24 @@ services:
     healthcheck:
       test: ["CMD", "wget", "-qO", "/dev/null", "http://localhost:8800"]
 
-  db:
-    build:
-      context: postgresql/
-    environment:
-      - POSTGRES_USER
-      - POSTGRES_PASSWORD
-      - POSTGRES_DB
-      - CKAN_DB_USER
-      - CKAN_DB_PASSWORD
-      - CKAN_DB
-      - DATASTORE_READONLY_USER
-      - DATASTORE_READONLY_PASSWORD
-      - DATASTORE_DB
-    volumes:
-      - pg_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
+  # db:
+  #   build:
+  #     context: postgresql/
+  #   environment:
+  #     - POSTGRES_USER
+  #     - POSTGRES_PASSWORD
+  #     - POSTGRES_DB
+  #     - CKAN_DB_USER
+  #     - CKAN_DB_PASSWORD
+  #     - CKAN_DB
+  #     - DATASTORE_READONLY_USER
+  #     - DATASTORE_READONLY_PASSWORD
+  #     - DATASTORE_DB
+  #   volumes:
+  #     - pg_data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
      
   solr:
     image: ckan/ckan-solr:${SOLR_IMAGE_VERSION}

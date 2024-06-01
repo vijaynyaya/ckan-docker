@@ -21,18 +21,31 @@ FROM ckan/ckan-dev:2.10.4
 #    pip3 install -r ${APP_DIR}/src/ckanext-harvest/pip-requirements.txt
 # will also require gather_consumer and fetch_consumer processes running (please see https://github.com/ckan/ckanext-harvest)
 
-### Scheming ###
-#RUN  pip3 install -e 'git+https://github.com/ckan/ckanext-scheming.git@master#egg=ckanext-scheming'
+## Scheming ###
+RUN  pip3 install -e 'git+https://github.com/ckan/ckanext-scheming.git@master#egg=ckanext-scheming'
 
 ### Pages ###
 #RUN  pip3 install -e git+https://github.com/ckan/ckanext-pages.git#egg=ckanext-pages
 
-### DCAT ###
-#RUN  pip3 install -e git+https://github.com/ckan/ckanext-dcat.git@v0.0.6#egg=ckanext-dcat && \
-#     pip3 install -r https://raw.githubusercontent.com/ckan/ckanext-dcat/v0.0.6/requirements.txt
+## DCAT ###
+RUN  pip3 install -e git+https://github.com/ckan/ckanext-dcat.git@v1.7.0#egg=ckanext-dcat && \
+    pip3 install -r https://raw.githubusercontent.com/ckan/ckanext-dcat/v1.7.0/requirements.txt
 
 # Clone the extension(s) your are writing for your own project in the `src` folder
 # to get them mounted in this image at runtime
+
+## Datopian ###
+RUN  pip3 install -e git+https://github.com/datopian/ckanext-noanonaccess.git#egg=ckanext-noanonaccess
+RUN  pip3 install -e git+https://github.com/datopian/ckanext-s3filestore.git@b7789ff905c854347f460ee506dfe7ae7f228ac1#egg=ckanext-s3filestore
+
+## CKANEXT IDP ###
+RUN apk add py3-pyarrow
+RUN pip3 install pyarrow pandas
+RUN pip3 install -e git+https://suryakandukuri:${BIPPISB_GITHUB_ACCESS_TOKEN}@github.com/bippisb/ckanext-idp.git@remove-geopandas-for-ckan-docker#egg=ckanext-idp
+
+ENV SRC_EXTENSIONS_DIR=${APP_DIR}/src
+
+RUN chown -R ckan:ckan .
 
 # Copy custom initialization scripts
 COPY docker-entrypoint.d/* /docker-entrypoint.d/
@@ -42,9 +55,9 @@ COPY docker-entrypoint.d/* /docker-entrypoint.d/
 COPY patches ${APP_DIR}/patches
 
 RUN for d in $APP_DIR/patches/*; do \
-        if [ -d $d ]; then \
-            for f in `ls $d/*.patch | sort -g`; do \
-                cd $SRC_DIR/`basename "$d"` && echo "$0: Applying patch $f to $SRC_DIR/`basename $d`"; patch -p1 < "$f" ; \
-            done ; \
-        fi ; \
+    if [ -d $d ]; then \
+    for f in `ls $d/*.patch | sort -g`; do \
+    cd $SRC_DIR/`basename "$d"` && echo "$0: Applying patch $f to $SRC_DIR/`basename $d`"; patch -p1 < "$f" ; \
+    done ; \
+    fi ; \
     done

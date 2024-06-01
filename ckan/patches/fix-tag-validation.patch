@@ -1,0 +1,59 @@
+diff --git a/ckan/logic/validators.py b/ckan/logic/validators.py
+index 2a8b92c2d..82376ca50 100644
+--- a/ckan/logic/validators.py
++++ b/ckan/logic/validators.py
+@@ -479,7 +479,7 @@ def tag_length_validator(value: Any, context: Context) -> Any:
+ def tag_name_validator(value: Any, context: Context) -> Any:
+     """Ensures that tag does not contain wrong characters
+     """
+-    tagname_match = re.compile(r'[\w \-.]*$', re.UNICODE)
++    tagname_match = re.compile(r'[\w \-.,]*$', re.UNICODE)
+     if not tagname_match.match(value):
+         raise Invalid(_('Tag "%s" can only contain alphanumeric '
+                         'characters, spaces (" "), hyphens ("-"), '
+diff --git a/ckanext/datastore/backend/postgres.py b/ckanext/datastore/backend/postgres.py
+index 78519f6c9..67e1640a4 100644
+--- a/ckanext/datastore/backend/postgres.py
++++ b/ckanext/datastore/backend/postgres.py
+@@ -1817,7 +1817,7 @@ class DatastorePostgresqlBackend(DatastoreBackend):
+                 privilege_sql = u"SELECT has_table_privilege(%s, '_foo', %s)"
+                 have_privilege: bool = write_connection.execute(
+                     privilege_sql,
+-                    (read_connection_user, privilege)
++                    (read_connection_user.split('@')[0], privilege)
+                 ).one()[0]
+                 if have_privilege:
+                     return False
+@@ -2146,13 +2146,6 @@ class DatastorePostgresqlBackend(DatastoreBackend):
+             size_results = engine.execute(size_sql)
+             info['meta']['size'] = size_results.fetchone()[0]  # type: ignore
+ 
+-            # DB_SIZE - size of database in bytes
+-            dbsize_sql = sqlalchemy.text(
+-                u"SELECT pg_database_size(current_database())")
+-            dbsize_results = engine.execute(dbsize_sql)
+-            info['meta']['db_size'] = \
+-                dbsize_results.fetchone()[0]  # type: ignore
+-
+             # IDXSIZE - size of all indices for table in bytes
+             idxsize_sql = sqlalchemy.text(
+                 u"SELECT pg_indexes_size('{0}')".format(id))
+diff --git a/ckanext/datastore/helpers.py b/ckanext/datastore/helpers.py
+index 79731a1b7..8699c1ecd 100644
+--- a/ckanext/datastore/helpers.py
++++ b/ckanext/datastore/helpers.py
+@@ -119,7 +119,13 @@ def get_table_and_function_names_from_sql(context: Context, sql: str):
+                 six.ensure_str(sql))).fetchone()
+ 
+         try:
+-            query_plan = json.loads(result['QUERY PLAN'])
++            if isinstance(result['QUERY PLAN'], list):
++                result_query_plan = json.dumps(result['QUERY PLAN'])
++            else:
++                result_query_plan = result['QUERY PLAN']
++                
++            query_plan = json.loads(result_query_plan)
++            
+             plan = query_plan[0]['Plan']
+ 
+             t, q, f = _parse_query_plan(plan)
